@@ -5,51 +5,22 @@
   <meta charset="UTF-8">
   <title>टाइपिंग टेस्ट</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      padding: 20px;
-    }
-    .header {
-      background-color: #ff6600;
-      color: white;
-      padding: 10px;
-      font-size: 24px;
-      font-weight: bold;
-    }
-    .controls {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      margin: 15px 0;
-      flex-wrap: wrap;
-    }
-    textarea {
-      width: 100%;
-      height: 150px;
-      padding: 10px;
-      font-size: 16px;
-      resize: none;
-    }
-    .result {
-      margin-top: 20px;
-      background: #fff;
-      padding: 10px;
-      border-radius: 5px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
-    }
+    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
+    .header { background-color: #ff6600; color: white; padding: 10px; font-size: 24px; font-weight: bold; }
+    .controls { display: flex; gap: 10px; align-items: center; margin: 15px 0; flex-wrap: wrap; }
+    textarea { width: 100%; height: 150px; padding: 10px; font-size: 16px; resize: none; }
+    .result { margin-top: 20px; background: #fff; padding: 10px; border-radius: 5px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
     .bold { font-weight: bold; }
     label { margin-right: 5px; }
-    button {
-      padding: 10px 15px;
-      background-color: #ff6600;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
-      margin-top: 10px;
-    }
+    button { padding: 10px 15px; background-color: #ff6600; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+    #timerDisplay { font-weight: bold; color: red; font-size: 18px; }
+    .resultText, .report-table { background: #f9f9f9; padding: 10px; margin-top: 10px; border-radius: 5px; }
+    .resultText h4 { margin-bottom: 5px; color: #333; }
+    .paraBox { background: #eee; padding: 10px; border-radius: 4px; white-space: pre-wrap; font-family: 'Courier New', monospace; }
+    .wrong-char { color: red; text-decoration: underline; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    table td, table th { border: 1px solid #ddd; padding: 8px; font-family: Arial; }
+    table th { background-color: #ff6600; color: white; }
   </style>
  </head>
  <body>
@@ -57,85 +28,138 @@
    🧠 Online Typing
   </div>
   <div class="controls">
-   <label>SET Time:</label> <select id="timeSelector"> <option value="5">5</option> <option value="10" selected>10</option> <option value="15">15</option> <option value="20">20</option> </select> <label>Auto Scroll:</label> <input type="checkbox" id="autoScroll" checked> <label>Font Size:</label> <input type="number" id="fontSize" value="18" min="12" max="40"> px 
+   <label>SET Time:</label> <select id="timeSelector"><option value="5">5</option><option value="10" selected>10</option><option value="15">15</option><option value="20">20</option></select> <label>Auto Scroll:</label><input type="checkbox" id="autoScroll" checked> <label>Font Size:</label><input type="number" id="fontSize" value="18" min="12" max="40"> px 
    <div class="bold">
     Paragraph Words: <span id="wordCount">0</span>
    </div>
+   <div id="timerDisplay">
+    Time Left: 00:00
+   </div>
   </div><label>Paste Paragraph Here:</label> <textarea id="paraInput" placeholder="अपना पैराग्राफ यहाँ डालें..."></textarea> <label>Typing Area:</label> <textarea id="typingBox" placeholder="यहाँ टाइप करें..." disabled></textarea> <button onclick="startTest()">Start Test</button> <button onclick="quickResults()">Quick Results</button>
   <div class="result" id="resultBox" style="display:none">
-   <p>🕒 Time: <span id="timeTaken"></span> सेकंड</p>
-   <p>💨 Speed: <span id="speed"></span> WPM</p>
-   <p>🎯 Accuracy: <span id="accuracy"></span>%</p>
-   <p>⌫ Backspaces: <span id="backspaceCount"></span></p>
+   <p><strong>Result:</strong> <span id="passFail" style="color:green">Pass</span></p>
+   <p><strong>Time:</strong> <span id="timeTaken"></span> सेकंड</p>
+   <p><strong>Speed:</strong> <span id="speed"></span> WPM</p>
+   <div class="report-table">
+    <table>
+     <tbody>
+      <tr>
+       <th>Gross Char</th>
+       <th>Net Char</th>
+       <th>Wrong</th>
+       <th>Backspaces</th>
+      </tr>
+      <tr>
+       <td id="grossChar">0</td>
+       <td id="netChar">0</td>
+       <td id="wrongChar">0</td>
+       <td id="backspaceChar">0</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <div class="resultText">
+    <h4>Original Paragraph:</h4>
+    <div class="paraBox" id="originalTextBox"></div>
+    <h4>Your Paragraph:</h4>
+    <div class="paraBox" id="typedTextBox"></div>
+   </div>
   </div>
   <script>
-    let startTime, timer;
-    let backspaceCount = 0;
-    let originalText = "";
+    const paraInput = document.getElementById('paraInput');
+    const typingBox = document.getElementById('typingBox');
+    const timerDisplay = document.getElementById('timerDisplay');
+    let startTime, timer, countdownInterval;
+    let backspaceCount = 0, originalText = "";
 
-    document.getElementById('paraInput').addEventListener('input', () => {
-      const text = document.getElementById('paraInput').value.trim();
-      document.getElementById('wordCount').textContent = text.split(/\s+/).length;
+    paraInput.addEventListener('input', () => {
+      const text = paraInput.value.trim();
+      document.getElementById('wordCount').textContent = text ? text.split(/\s+/).length : 0;
     });
 
     document.getElementById('fontSize').addEventListener('input', () => {
-      document.getElementById('typingBox').style.fontSize = document.getElementById('fontSize').value + 'px';
+      typingBox.style.fontSize = document.getElementById('fontSize').value + 'px';
+    });
+
+    typingBox.addEventListener('keydown', e => {
+      if (!typingBox.disabled && e.key === 'Backspace') backspaceCount++;
+      if (document.getElementById('autoScroll').checked) typingBox.scrollTop = typingBox.scrollHeight;
     });
 
     function startTest() {
-      const typingBox = document.getElementById('typingBox');
-      originalText = document.getElementById('paraInput').value.trim();
+      originalText = paraInput.value.trim();
       if (!originalText) return alert("कृपया पैराग्राफ डालें");
-
       typingBox.value = "";
       typingBox.disabled = false;
       typingBox.focus();
-
       backspaceCount = 0;
       startTime = new Date();
       const minutes = parseInt(document.getElementById('timeSelector').value);
-      const totalMilliseconds = minutes * 60 * 1000;
-
-      typingBox.addEventListener('keydown', e => {
-        if (e.key === 'Backspace') backspaceCount++;
-        if (document.getElementById('autoScroll').checked) {
-          typingBox.scrollTop = typingBox.scrollHeight;
-        }
-      });
-
+      const totalSeconds = minutes * 60;
+      let secondsLeft = totalSeconds;
+      timerDisplay.textContent = `Time Left: ${formatTime(secondsLeft)}`;
+      countdownInterval = setInterval(() => {
+        secondsLeft--;
+        timerDisplay.textContent = `Time Left: ${formatTime(secondsLeft)}`;
+        if (secondsLeft <= 0) clearInterval(countdownInterval);
+      }, 1000);
       clearTimeout(timer);
-      timer = setTimeout(endTest, totalMilliseconds);
+      timer = setTimeout(endTest, totalSeconds * 1000);
+      document.getElementById('resultBox').style.display = 'none';
     }
 
     function endTest() {
+      clearInterval(countdownInterval);
       showResults();
     }
 
     function quickResults() {
+      clearInterval(countdownInterval);
       showResults(true);
     }
 
+    function highlightDifferences(text1, text2) {
+      let result1 = '', result2 = '';
+      const maxLen = Math.max(text1.length, text2.length);
+      for (let i = 0; i < maxLen; i++) {
+        const char1 = text1[i] || '', char2 = text2[i] || '';
+        result1 += (char1 === char2) ? char1 : `<span class="wrong-char">${char1}</span>`;
+        result2 += (char1 === char2) ? char2 : `<span class="wrong-char">${char2}</span>`;
+      }
+      return [result1, result2];
+    }
+
     function showResults(isQuick = false) {
-      const typingBox = document.getElementById('typingBox');
       typingBox.disabled = true;
       const endTime = new Date();
       const totalTime = isQuick ? ((endTime - startTime || 1) / 1000) : ((endTime - startTime) / 1000);
-
       const typed = typingBox.value.trim();
       const words = typed ? typed.split(/\s+/).length : 0;
       const speed = totalTime > 0 ? Math.round((words / totalTime) * 60) : 0;
-
       let correctChars = 0;
       for (let i = 0; i < Math.min(typed.length, originalText.length); i++) {
         if (typed[i] === originalText[i]) correctChars++;
       }
-      const accuracy = originalText.length > 0 ? ((correctChars / originalText.length) * 100).toFixed(2) : 0;
-
+      const grossChars = typed.length;
+      const wrongChars = grossChars - correctChars;
+      const netChars = grossChars - wrongChars;
       document.getElementById('timeTaken').textContent = totalTime.toFixed(1);
       document.getElementById('speed').textContent = speed;
-      document.getElementById('accuracy').textContent = accuracy;
-      document.getElementById('backspaceCount').textContent = backspaceCount;
+      document.getElementById('grossChar').textContent = grossChars;
+      document.getElementById('wrongChar').textContent = wrongChars;
+      document.getElementById('netChar').textContent = netChars;
+      document.getElementById('backspaceChar').textContent = backspaceCount;
+      document.getElementById('passFail').textContent = speed >= 30 ? 'Pass' : 'Fail';
+      document.getElementById('passFail').style.color = speed >= 30 ? 'green' : 'red';
+      const [highlightedOriginal, highlightedTyped] = highlightDifferences(originalText, typed);
+      document.getElementById('originalTextBox').innerHTML = highlightedOriginal;
+      document.getElementById('typedTextBox').innerHTML = highlightedTyped;
       document.getElementById('resultBox').style.display = 'block';
+    }
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60), s = seconds % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     }
   </script>
  </body>
