@@ -1,7 +1,7 @@
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="hi">
-<head>
+ <head>
   <meta charset="UTF-8">
   <title>टाइपिंग टेस्ट</title>
   <style>
@@ -51,43 +51,23 @@
       margin-top: 10px;
     }
   </style>
-</head>
-<body>
-  <div class="header">🧠 Online Typing</div>
-
+ </head>
+ <body>
+  <div class="header">
+   🧠 Online Typing
+  </div>
   <div class="controls">
-    <label>SET Time:</label>
-    <select id="timeSelector">
-      <option value="5">5</option>
-      <option value="10" selected>10</option>
-      <option value="15">15</option>
-      <option value="20">20</option>
-    </select>
-
-    <label>Auto Scroll:</label>
-    <input type="checkbox" id="autoScroll" checked>
-
-    <label>Font Size:</label>
-    <input type="number" id="fontSize" value="18" min="12" max="40"> px
-
-    <div class="bold">Paragraph Words: <span id="wordCount">0</span></div>
-  </div>
-
-  <label>Paste Paragraph Here:</label>
-  <textarea id="paraInput" placeholder="अपना पैराग्राफ यहाँ डालें..."></textarea>
-
-  <label>Typing Area:</label>
-  <textarea id="typingBox" placeholder="यहाँ टाइप करें..." disabled></textarea>
-
-  <button onclick="startTest()">Start Test</button>
-
+   <label>SET Time:</label> <select id="timeSelector"> <option value="5">5</option> <option value="10" selected>10</option> <option value="15">15</option> <option value="20">20</option> </select> <label>Auto Scroll:</label> <input type="checkbox" id="autoScroll" checked> <label>Font Size:</label> <input type="number" id="fontSize" value="18" min="12" max="40"> px 
+   <div class="bold">
+    Paragraph Words: <span id="wordCount">0</span>
+   </div>
+  </div><label>Paste Paragraph Here:</label> <textarea id="paraInput" placeholder="अपना पैराग्राफ यहाँ डालें..."></textarea> <label>Typing Area:</label> <textarea id="typingBox" placeholder="यहाँ टाइप करें..." disabled></textarea> <button onclick="startTest()">Start Test</button> <button onclick="quickResults()">Quick Results</button>
   <div class="result" id="resultBox" style="display:none">
-    <p>🕒 Time: <span id="timeTaken"></span> सेकंड</p>
-    <p>💨 Speed: <span id="speed"></span> WPM</p>
-    <p>🎯 Accuracy: <span id="accuracy"></span>%</p>
-    <p>⌫ Backspaces: <span id="backspaceCount"></span></p>
+   <p>🕒 Time: <span id="timeTaken"></span> सेकंड</p>
+   <p>💨 Speed: <span id="speed"></span> WPM</p>
+   <p>🎯 Accuracy: <span id="accuracy"></span>%</p>
+   <p>⌫ Backspaces: <span id="backspaceCount"></span></p>
   </div>
-
   <script>
     let startTime, timer;
     let backspaceCount = 0;
@@ -128,20 +108,28 @@
     }
 
     function endTest() {
+      showResults();
+    }
+
+    function quickResults() {
+      showResults(true);
+    }
+
+    function showResults(isQuick = false) {
       const typingBox = document.getElementById('typingBox');
       typingBox.disabled = true;
       const endTime = new Date();
-      const totalTime = (endTime - startTime) / 1000;
+      const totalTime = isQuick ? ((endTime - startTime || 1) / 1000) : ((endTime - startTime) / 1000);
 
       const typed = typingBox.value.trim();
-      const words = typed.split(/\s+/).length;
-      const speed = Math.round((words / totalTime) * 60);
+      const words = typed ? typed.split(/\s+/).length : 0;
+      const speed = totalTime > 0 ? Math.round((words / totalTime) * 60) : 0;
 
       let correctChars = 0;
       for (let i = 0; i < Math.min(typed.length, originalText.length); i++) {
         if (typed[i] === originalText[i]) correctChars++;
       }
-      const accuracy = ((correctChars / originalText.length) * 100).toFixed(2);
+      const accuracy = originalText.length > 0 ? ((correctChars / originalText.length) * 100).toFixed(2) : 0;
 
       document.getElementById('timeTaken').textContent = totalTime.toFixed(1);
       document.getElementById('speed').textContent = speed;
@@ -150,5 +138,5 @@
       document.getElementById('resultBox').style.display = 'block';
     }
   </script>
-</body>
+ </body>
 </html>
